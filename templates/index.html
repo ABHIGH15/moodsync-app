@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MoodSync — AI Music Recommender</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 text-white">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold mb-2">🎵 MoodSync</h1>
+    <p class="text-slate-300 mb-8">Recommendations by Mood + Language. Use face, text, or manual mood.</p>
+
+    <form action="/recommend" method="POST" enctype="multipart/form-data" class="bg-white/10 backdrop-blur p-6 rounded-2xl space-y-6">
+      <div>
+        <label class="block mb-2 font-medium">Upload a face image (optional)</label>
+        <input type="file" name="face" accept="image/*" class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+        <p class="text-xs text-slate-400 mt-2">We’ll detect a mood from your facial expression if provided.</p>
+      </div>
+
+      <div>
+        <label class="block mb-2 font-medium">Or describe how you feel (optional)</label>
+        <input name="feeling_text" placeholder="e.g., feeling great and excited!" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block mb-2 font-medium">Mood (fallback)</label>
+          <select name="mood" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
+            {% for m in moods %}
+              <option>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block mb-2 font-medium">Language</label>
+          <select name="language" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <option value="">Any</option>
+            {% for lang in languages %}
+              <option value="{{ lang }}">{{ lang }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <button class="w-full bg-emerald-500 hover:bg-emerald-600 transition rounded-xl py-3 font-semibold">🎶 Get Recommendations</button>
+    </form>
+
+    <footer class="mt-10 text-xs text-slate-400">ML Course Project • Mood + Language • YouTube & Spotify</footer>
+  </div>
+</body>
+</html>
