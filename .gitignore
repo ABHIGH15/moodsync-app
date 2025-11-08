@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+.DS_Store
+*.ipynb_checkpoints
+# if you choose not to version large binaries
+data/*.csv
+model/*.joblib
