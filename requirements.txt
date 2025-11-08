@@ -1,0 +1,13 @@
+flask==3.0.0
+gunicorn==22.0.0
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+scikit-learn==1.5.1
+opencv-python-headless==4.10.0.84
+fer==22.5.1
+mtcnn==0.1.1
+youtubesearchpython==1.6.6
+TextBlob==0.18.0
+pydub==0.25.1
+flask-ngrok==0.0.25  # for Colab testing only; safe to keep
