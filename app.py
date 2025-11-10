@@ -3,8 +3,9 @@ import os
 from flask import Flask, render_template, request
 import pandas as pd
 import joblib
+from flask_ngrok import run_with_ngrok
 
-# Import utility functions
+# --- Utility imports ---
 from utils.preprocessing import load_dataset
 from utils.recommend import recommend_songs
 from utils.youtube_spotify import attach_links
@@ -12,10 +13,9 @@ from utils.face_emotion import detect_face_mood
 from utils.text_voice import analyze_text_mood
 from utils.mood_mapper import sanitize_mood
 
-# --- Flask App Setup ---
+# --- Flask Setup ---
 app = Flask(__name__)
 
-# Paths
 DATA_PATH = "data/final_master_song_dataset.csv"
 MODEL_PATH = "model/final_mood_classifier_v1.joblib"
 UPLOAD_FOLDER = "uploads"
@@ -23,11 +23,16 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Load Data and Model ---
 print("🔄 Loading data and model...")
-df = load_dataset(DATA_PATH)
-model = joblib.load(MODEL_PATH)
-print("✅ Model and dataset loaded successfully.")
+try:
+    df = load_dataset(DATA_PATH)
+    model = joblib.load(MODEL_PATH)
+    print("✅ Model and dataset loaded successfully.")
+except Exception as e:
+    print("⚠️ Error loading model or dataset:", e)
+    df = pd.DataFrame()
+    model = None
 
-# --- Home Route ---
+# --- Routes ---
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -36,28 +41,26 @@ def index():
         text_input = request.form.get("user_text", "").strip()
         image = request.files.get("face_image")
 
-        # 🔹 1️⃣ Face detection takes priority
+        # 1️⃣ Face Image
         if image and image.filename != "":
             image_path = os.path.join(UPLOAD_FOLDER, image.filename)
             image.save(image_path)
             mood_input = detect_face_mood(image_path)
-            os.remove(image_path)  # cleanup
-        # 🔹 2️⃣ Fallback to text-based mood
+            os.remove(image_path)
+        # 2️⃣ Text Input
         elif text_input:
             mood_input = analyze_text_mood(text_input)
-        # 🔹 3️⃣ Default mood
+        # 3️⃣ Default
         else:
             mood_input = "Calm"
 
         mood = sanitize_mood(mood_input)
-        print(f"🎭 Final detected mood: {mood} | Language: {language or 'Any'}")
+        print(f"🎭 Mood detected: {mood} | Language: {language or 'Any'}")
 
-        # 🔹 4️⃣ Get recommendations
+        # Recommendations
         recommendations = recommend_songs(df, mood, language)
-        recommendations_dict = recommendations.to_dict(orient="records")
-
-        # 🔹 5️⃣ Attach YouTube + Spotify links
-        songs_with_links = attach_links(recommendations_dict)
+        songs_dict = recommendations.to_dict(orient="records")
+        songs_with_links = attach_links(songs_dict)
 
         return render_template(
             "results.html",
@@ -68,17 +71,11 @@ def index():
 
     return render_template("index.html")
 
-
-# --- Health Check / API Ping ---
 @app.route("/ping")
 def ping():
     return {"status": "ok", "message": "Flask backend running successfully 🎶"}
 
-# --- Run App ---
+# --- Run App (Colab Compatible) ---
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-from flask_ngrok import run_with_ngrok
-
-if __name__ == "__main__":
-    run_with_ngrok(app)  # Starts ngrok when running in Colab
+    run_with_ngrok(app)
     app.run()
