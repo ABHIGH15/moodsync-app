@@ -1,14 +1,28 @@
-flask==3.0.0
+# ---- Core Flask App ----
+flask==3.0.3
 gunicorn==22.0.0
+
+# ---- Data Science / ML ----
 pandas==2.2.2
 numpy==1.26.4
-joblib==1.4.2
 scikit-learn==1.5.1
+joblib==1.4.2
+
+# ---- Emotion & Vision ----
 opencv-python-headless==4.10.0.84
 fer==22.5.1
 mtcnn==0.1.1
-youtubesearchpython==1.6.6
+
+# ---- NLP & Audio ----
 TextBlob==0.18.0
+nltk==3.9.1
 pydub==0.25.1
-flask-ngrok==0.0.25  # for Colab testing only; safe to keep
-nltk
+
+# ---- Song Search ----
+youtubesearchpython==1.6.6
+
+# ---- Colab / Testing (optional, auto ignored on Render) ----
+flask-ngrok==0.0.25
+
+# ---- Misc ----
+requests==2.32.3
