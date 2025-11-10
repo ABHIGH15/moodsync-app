@@ -3,53 +3,40 @@ import cv2
 from fer import FER
 import numpy as np
 
-# Initialize the FER detector (using MTCNN for better accuracy)
-emotion_detector = FER(mtcnn=True)
-
-# Mapping raw facial emotion → system moods
-EMOTION_TO_MOOD = {
-    "happy": "Happy",
-    "angry": "Energetic",
-    "fear": "Calm",
-    "sad": "Sad",
-    "surprise": "Energetic",
-    "neutral": "Calm",
-    "disgust": "Sad",
-}
-
 def detect_face_mood(image_path: str) -> str:
     """
-    Detects dominant emotion from a given face image and maps it to system mood.
-    Returns the mood label (Happy, Sad, Calm, Energetic).
+    Detects mood from a face image using FER library.
+    Returns one of: ['Happy', 'Sad', 'Angry', 'Surprise', 'Neutral', 'Disgust', 'Fear']
     """
     try:
+        # Load the image
         img = cv2.imread(image_path)
         if img is None:
-            raise ValueError("Invalid image path or unreadable image.")
+            raise ValueError("❌ Image could not be read. Invalid path or format.")
         
-        # Detect emotions
-        results = emotion_detector.detect_emotions(img)
-        if not results:
-            print("⚠️ No face detected in the image.")
-            return "Calm"  # fallback mood
+        detector = FER(mtcnn=True)
+        emotions = detector.detect_emotions(img)
 
-        # Get the emotion dictionary of the first detected face
-        emotions = results[0]["emotions"]
-        dominant_emotion = max(emotions, key=emotions.get)
+        if not emotions:
+            return "Neutral"
 
-        # Map to app mood categories
-        mapped_mood = EMOTION_TO_MOOD.get(dominant_emotion, "Calm")
-        confidence = emotions[dominant_emotion]
+        # Extract top emotion by confidence
+        top_emotion, score = detector.top_emotion(img)
+        if score < 0.5:
+            return "Neutral"
 
-        print(f"Detected facial emotion: {dominant_emotion} ({confidence:.2f}) → Mapped mood: {mapped_mood}")
-        return mapped_mood
+        # Normalize to standard moods
+        mood_map = {
+            "happy": "Happy",
+            "sad": "Sad",
+            "angry": "Energetic",
+            "neutral": "Calm",
+            "surprise": "Happy",
+            "disgust": "Sad",
+            "fear": "Sad"
+        }
+        return mood_map.get(top_emotion.lower(), "Calm")
+
     except Exception as e:
-        print(f"[Face Emotion Error] {e}")
-        return "Calm"  # safe fallback
-
-if __name__ == "__main__":
-    # Local test (you can replace path with an image on your system)
-    test_image = "data/test_face.jpg"
-    mood = detect_face_mood(test_image)
-    print("Predicted Mood:", mood)
-
+        print("⚠️ Face detection error:", e)
+        return "Calm"
