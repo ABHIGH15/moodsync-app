@@ -3,7 +3,6 @@ import os
 from flask import Flask, render_template, request
 import pandas as pd
 import joblib
-from flask_ngrok import run_with_ngrok
 
 # --- Utility imports ---
 from utils.preprocessing import load_dataset
