@@ -77,5 +77,4 @@ def ping():
 
 # --- Run App (Colab Compatible) ---
 if __name__ == "__main__":
-    run_with_ngrok(app)
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
