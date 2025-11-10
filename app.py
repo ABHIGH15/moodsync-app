@@ -77,3 +77,8 @@ def ping():
 # --- Run App ---
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+from flask_ngrok import run_with_ngrok
+
+if __name__ == "__main__":
+    run_with_ngrok(app)  # Starts ngrok when running in Colab
+    app.run()
