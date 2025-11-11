@@ -1,33 +1,44 @@
 # utils/youtube_spotify.py
 import urllib.parse
 
+def safe_str(value):
+    """Ensure string safety for URL building."""
+    return str(value or "").strip()
+
 def build_youtube_link(song_name: str, artist: str) -> str:
     """
-    Creates a direct YouTube search link instead of downloading metadata.
+    Builds a fast, direct YouTube search URL — no API or subprocess.
+    Adds 'official music video' keywords for higher match relevance.
     """
-    query = urllib.parse.quote(f"{song_name} {artist}")
-    return f"https://www.youtube.com/results?search_query={query}"
+    query = f"{safe_str(song_name)} {safe_str(artist)} official music video"
+    encoded = urllib.parse.quote_plus(query)
+    return f"https://www.youtube.com/results?search_query={encoded}"
 
 def build_spotify_link(song_name: str, artist: str) -> str:
     """
-    Creates a Spotify search link.
+    Builds a Spotify search URL for the given song and artist.
     """
-    query = urllib.parse.quote(f"{song_name} {artist}")
-    return f"https://open.spotify.com/search/{query}"
+    query = f"{safe_str(song_name)} {safe_str(artist)}"
+    encoded = urllib.parse.quote_plus(query)
+    return f"https://open.spotify.com/search/{encoded}"
 
 def attach_links(recommendations: list) -> list:
     """
-    Adds YouTube & Spotify links to each song in the list.
+    Adds YouTube & Spotify search links to each recommended song.
+    Render-safe: no network calls, subprocess, or heavy dependencies.
     """
-    if not recommendations or not isinstance(recommendations, list):
+    if not isinstance(recommendations, list) or len(recommendations) == 0:
         return []
 
     for r in recommendations:
         try:
-            r["youtube"] = build_youtube_link(r["name"], r["artist"])
-            r["spotify"] = build_spotify_link(r["name"], r["artist"])
+            name = r.get("name", "")
+            artist = r.get("artist", "")
+            r["youtube"] = build_youtube_link(name, artist)
+            r["spotify"] = build_spotify_link(name, artist)
         except Exception as e:
             print(f"⚠️ Link generation error: {e}")
             r["youtube"] = "#"
             r["spotify"] = "#"
+
     return recommendations
