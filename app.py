@@ -12,6 +12,9 @@ from utils.face_emotion import detect_face_mood
 from utils.text_voice import analyze_text_mood
 from utils.mood_mapper import sanitize_mood
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 # --- Flask Setup ---
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
