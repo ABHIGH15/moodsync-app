@@ -1,59 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
   <title>MoodSync — AI Music Recommender</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 text-white flex items-center justify-center">
-  <div class="max-w-3xl mx-auto py-10 px-4 w-full">
-    <h1 class="text-4xl font-extrabold mb-3 text-emerald-400 text-center">🎵 MoodSync</h1>
-    <p class="text-slate-300 mb-8 text-center text-lg">AI-powered Music Recommendations based on your Mood & Language</p>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 text-white">
+  <!-- Header -->
+  <header class="border-b border-white/10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500 grid place-items-center">🎵</div>
+        <h1 class="text-xl font-semibold">MoodSync</h1>
+      </div>
+      <nav class="text-sm flex items-center gap-5">
+        <a href="/ping" target="_blank" class="text-slate-300 hover:text-white">/ping</a>
+        <a href="https://open.spotify.com/" target="_blank" class="text-slate-300 hover:text-white">Spotify</a>
+        <a href="https://www.youtube.com/" target="_blank" class="text-slate-300 hover:text-white">YouTube</a>
+      </nav>
+    </div>
+  </header>
 
-    <form action="/" method="POST" enctype="multipart/form-data" class="bg-white/10 backdrop-blur-md p-6 rounded-2xl space-y-6 shadow-xl border border-white/10">
-      
+  <main class="max-w-5xl mx-auto px-4 py-10">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold mb-2">Find music by <span class="text-emerald-400">Mood</span> & <span class="text-emerald-400">Language</span></h2>
+      <p class="text-slate-300">Upload a face image (optional), describe your feeling, or pick a mood manually.</p>
+    </div>
+
+    <form action="/" method="POST" enctype="multipart/form-data" class="bg-white/10 backdrop-blur p-6 rounded-2xl space-y-6">
+      <!-- Face image -->
       <div>
-        <label class="block mb-2 font-medium">📸 Upload a face image (optional)</label>
-        <input type="file" name="face_image" accept="image/*" 
-          class="block w-full text-sm text-slate-200 bg-slate-800 border border-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-emerald-400">
-        <p class="text-xs text-slate-400 mt-2">We'll detect your mood from facial expression if provided.</p>
+        <label class="block mb-2 font-medium">Upload a face image (optional)</label>
+        <input type="file" name="face" accept="image/*" class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+        <p class="text-xs text-slate-400 mt-2">We’ll detect mood from your facial expression if provided.</p>
       </div>
 
+      <!-- Feeling text -->
       <div>
-        <label class="block mb-2 font-medium">💬 Or describe how you feel (optional)</label>
-        <textarea name="user_text" placeholder="e.g., I'm feeling excited and energetic!" 
-          class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white"></textarea>
+        <label class="block mb-2 font-medium">Or describe how you feel (optional)</label>
+        <input name="feeling_text" placeholder="e.g., feeling great and excited!" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700" />
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Mood & Language -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-2 font-medium">🌐 Preferred Language</label>
-          <select name="language" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white">
+          <label class="block mb-2 font-medium">Mood (fallback)</label>
+          <select name="mood" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
+            {% for m in moods %}
+              <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block mb-2 font-medium">Language</label>
+          <select name="language" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
             <option value="">Any</option>
-            <option value="English">English</option>
-            <option value="Hindi">Hindi</option>
-            <option value="Spanish">Spanish</option>
-            <option value="Korean">Korean</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block mb-2 font-medium">🎭 Manual Mood (fallback)</label>
-          <select name="mood" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white">
-            <option value="Happy">Happy</option>
-            <option value="Sad">Sad</option>
-            <option value="Energetic">Energetic</option>
-            <option value="Calm">Calm</option>
+            {% for lang in languages %}
+              <option value="{{ lang }}">{{ lang }}</option>
+            {% endfor %}
           </select>
         </div>
       </div>
 
-      <button class="w-full bg-emerald-500 hover:bg-emerald-600 transition rounded-xl py-3 font-semibold text-lg">
-        🎶 Get Recommendations
-      </button>
+      <button class="w-full bg-emerald-500 hover:bg-emerald-600 transition rounded-xl py-3 font-semibold">🎶 Get Recommendations</button>
     </form>
 
-    <footer class="mt-10 text-xs text-slate-400 text-center">Made with ❤️ by Team MoodSync — ML Course Project</footer>
-  </div>
+    <p class="text-xs text-slate-400 mt-6">Tip: if face/text isn’t provided, your manual mood is used.</p>
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-4 pb-10 text-xs text-slate-400">
+    ML Course Project • Mood + Language • Links open in new tabs
+  </footer>
 </body>
 </html>
