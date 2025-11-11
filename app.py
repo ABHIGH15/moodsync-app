@@ -12,48 +12,52 @@ from utils.face_emotion import detect_face_mood
 from utils.text_voice import analyze_text_mood
 from utils.mood_mapper import sanitize_mood
 
-logging.basicConfig(level=logging.INFO)
+# ---- Logging ----
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
+# ---- Flask Setup ----
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# ---- Supported Options ----
+# ---- Supported Lists ----
 SUPPORTED_MOODS = ["Calm", "Happy", "Sad", "Energetic"]
 SUPPORTED_LANGUAGES = ["English", "Hindi", "Tamil", "Marathi", "Punjabi"]
 
-# ---- Mood → UI theme (emoji + Tailwind color classes) ----
+# ---- Mood → Theme Map (emoji + Tailwind color) ----
 MOOD_THEME = {
-    "Calm":      {"emoji": "🧘", "color": "emerald", "bg": "bg-emerald-500"},
-    "Happy":     {"emoji": "😊", "color": "yellow",  "bg": "bg-yellow-500"},
-    "Sad":       {"emoji": "😔", "color": "blue",    "bg": "bg-blue-500"},
-    "Energetic": {"emoji": "⚡", "color": "pink",    "bg": "bg-pink-500"},
+    "Calm":      {"emoji": "🧘", "color": "emerald", "bg": "bg-emerald-500/20"},
+    "Happy":     {"emoji": "😊", "color": "yellow",  "bg": "bg-yellow-500/20"},
+    "Sad":       {"emoji": "😔", "color": "blue",    "bg": "bg-blue-500/20"},
+    "Energetic": {"emoji": "⚡", "color": "pink",    "bg": "bg-pink-500/20"},
 }
 
+# ---- File Paths ----
 DATA_PATH = "data/final_master_song_dataset.csv"
 MODEL_PATH = "model/final_mood_classifier_v1.joblib"
 
+# ---- Model & Data Loading ----
 logging.info("🔄 Loading dataset and model...")
 try:
     df = load_dataset(DATA_PATH)
     model = joblib.load(MODEL_PATH)
-    logging.info("✅ Model and dataset loaded successfully.")
+    logging.info(f"✅ Dataset loaded: {df.shape[0]} rows | Model OK")
 except Exception as e:
-    logging.error(f"⚠️ Error loading model or dataset: {e}")
-    df = pd.DataFrame()
-    model = None
+    logging.error(f"⚠️ Could not load model or dataset: {e}")
+    df, model = pd.DataFrame(), None
 
+
+# ---- Home Route ----
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        # names aligned with your HTML
-        language   = (request.form.get("language") or "").strip()
+        language = (request.form.get("language") or "").strip()
         text_input = (request.form.get("feeling_text") or "").strip()
-        image      = request.files.get("face")
+        image = request.files.get("face")
 
         mood_input = None
 
-        # 1) face (no heavy libs on Render → your face_emotion stub returns Calm)
+        # 1️⃣ Face detection (stub → Calm)
         if image and image.filename:
             try:
                 image_path = os.path.join(app.config["UPLOAD_FOLDER"], image.filename)
@@ -63,14 +67,14 @@ def index():
             except Exception as e:
                 logging.warning(f"⚠️ Face detection failed: {e}")
 
-        # 2) text
+        # 2️⃣ Text mood detection
         if not mood_input and text_input:
             try:
                 mood_input = analyze_text_mood(text_input)
             except Exception as e:
                 logging.warning(f"⚠️ Text mood analysis failed: {e}")
 
-        # 3) manual fallback
+        # 3️⃣ Manual fallback
         if not mood_input:
             mood_input = (request.form.get("mood") or "Calm").strip()
 
@@ -82,18 +86,15 @@ def index():
 
         logging.info(f"🎭 Final Mood: {mood} | Language: {language or 'Any'}")
 
-        # recommendations
+        # Generate recommendations
         try:
             rec_df = recommend_songs(df, mood, language)
-            songs = rec_df.to_dict(orient="records") if rec_df is not None and not rec_df.empty else []
+            songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
             songs = attach_links(songs)
-
-            # mild reshuffle each request to avoid always-same order (no state, Render-safe)
             random.shuffle(songs)
 
-            # split: top 5 “mix” + remaining
-            top_mix = songs[:5]
-            rest    = songs[5:]
+            # Split: top 5 + remainder
+            top_mix, rest = songs[:5], songs[5:]
         except Exception as e:
             logging.error(f"⚠️ Recommendation generation error: {e}")
             top_mix, rest = [], []
@@ -111,9 +112,11 @@ def index():
             theme=theme
         )
 
-    # GET
+    # Default: GET → main form
     return render_template("index.html", moods=SUPPORTED_MOODS, languages=SUPPORTED_LANGUAGES, theme=MOOD_THEME["Calm"])
 
+
+# ---- JSON API ----
 @app.route("/api/recommend", methods=["POST"])
 def api_recommend():
     data = request.json or {}
@@ -125,24 +128,29 @@ def api_recommend():
 
     try:
         rec_df = recommend_songs(df, mood, language)
-        songs = rec_df.to_dict(orient="records") if rec_df is not None and not rec_df.empty else []
+        songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
         random.shuffle(songs)
         return jsonify(attach_links(songs))
     except Exception as e:
         logging.error(f"⚠️ API recommendation error: {e}")
         return jsonify({"error": "Recommendation generation failed"}), 500
 
+
+# ---- Health Check ----
 @app.route("/ping")
 def ping():
-    # visible health info for your demo
     return {
         "status": "ok",
         "message": "MoodSync backend running successfully 🎶",
         "moods": SUPPORTED_MOODS,
         "languages": SUPPORTED_LANGUAGES,
-        "dataset_rows": int(df.shape[0]) if isinstance(df, pd.DataFrame) else 0
+        "dataset_rows": int(df.shape[0]) if isinstance(df, pd.DataFrame) else 0,
+        "team": "Predix"
     }
 
+
+# ---- Entry Point ----
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    logging.info(f"🚀 Starting MoodSync on port {port}")
     app.run(host="0.0.0.0", port=port)
