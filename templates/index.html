@@ -1,77 +1,99 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>MoodSync — AI Music Recommender</title>
+  <title>MoodSync — ML Music Recommender</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 text-white">
+
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-emerald-900 text-white selection:bg-emerald-400/30">
   <!-- Header -->
-  <header class="border-b border-white/10">
+  <header class="border-b border-white/10 backdrop-blur-lg sticky top-0 z-20">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-emerald-500 grid place-items-center">🎵</div>
-        <h1 class="text-xl font-semibold">MoodSync</h1>
+        <div class="w-9 h-9 rounded-xl bg-emerald-500 shadow-lg shadow-emerald-500/30 grid place-items-center animate-pulse">🎵</div>
+        <h1 class="text-xl font-semibold tracking-wide">MoodSync</h1>
       </div>
       <nav class="text-sm flex items-center gap-5">
-        <a href="/ping" target="_blank" class="text-slate-300 hover:text-white">/ping</a>
-        <a href="https://open.spotify.com/" target="_blank" class="text-slate-300 hover:text-white">Spotify</a>
-        <a href="https://www.youtube.com/" target="_blank" class="text-slate-300 hover:text-white">YouTube</a>
+        <a href="/ping" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">/ping</a>
+        <a href="https://open.spotify.com/" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">Spotify</a>
+        <a href="https://www.youtube.com/" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">YouTube</a>
       </nav>
     </div>
   </header>
 
+  <!-- Main -->
   <main class="max-w-5xl mx-auto px-4 py-10">
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold mb-2">Find music by <span class="text-emerald-400">Mood</span> & <span class="text-emerald-400">Language</span></h2>
-      <p class="text-slate-300">Upload a face image (optional), describe your feeling, or pick a mood manually.</p>
+    <div class="mb-8 text-center">
+      <h2 class="text-4xl font-extrabold mb-3 bg-gradient-to-r from-emerald-400 to-cyan-400 text-transparent bg-clip-text">
+        Find music by Mood & Language
+      </h2>
+      <p class="text-slate-300 text-sm max-w-lg mx-auto">
+        Upload a face image (optional), describe your feeling, or pick a mood manually to get ML-based song recommendations.
+      </p>
     </div>
 
-    <form action="/" method="POST" enctype="multipart/form-data" class="bg-white/10 backdrop-blur p-6 rounded-2xl space-y-6">
-      <!-- Face image -->
+    <form action="/" method="POST" enctype="multipart/form-data"
+          class="bg-white/10 backdrop-blur-xl border border-white/10 p-8 rounded-2xl space-y-6 shadow-lg shadow-black/20 transition hover:shadow-emerald-500/20">
+
+      <!-- Face Image Upload -->
       <div>
-        <label class="block mb-2 font-medium">Upload a face image (optional)</label>
-        <input type="file" name="face" accept="image/*" class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
-        <p class="text-xs text-slate-400 mt-2">We’ll detect mood from your facial expression if provided.</p>
+        <label class="block mb-2 font-medium">📸 Upload a face image (optional)</label>
+        <input type="file" name="face_image" accept="image/*"
+               class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                      file:text-sm file:font-semibold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+        <p class="text-xs text-slate-400 mt-2">We’ll detect your mood from facial expression if provided.</p>
       </div>
 
-      <!-- Feeling text -->
+      <!-- Feeling Text -->
       <div>
-        <label class="block mb-2 font-medium">Or describe how you feel (optional)</label>
-        <input name="feeling_text" placeholder="e.g., feeling great and excited!" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700" />
+        <label class="block mb-2 font-medium">💬 Or describe how you feel</label>
+        <input name="user_text" placeholder="e.g., feeling peaceful and happy..."
+               class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700 focus:border-emerald-400 outline-none transition">
       </div>
 
       <!-- Mood & Language -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-2 font-medium">Mood (fallback)</label>
-          <select name="mood" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
-            {% for m in moods %}
+          <label class="block mb-2 font-medium">🎭 Mood (fallback)</label>
+          <select name="mood"
+                  class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700 focus:border-emerald-400 outline-none transition">
+            {% for m in ["Calm", "Happy", "Sad", "Energetic"] %}
               <option value="{{ m }}">{{ m }}</option>
             {% endfor %}
           </select>
         </div>
 
         <div class="md:col-span-2">
-          <label class="block mb-2 font-medium">Language</label>
-          <select name="language" class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700">
+          <label class="block mb-2 font-medium">🌐 Language</label>
+          <select name="language"
+                  class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700 focus:border-emerald-400 outline-none transition">
             <option value="">Any</option>
-            {% for lang in languages %}
+            {% for lang in ["English", "Hindi", "Tamil", "Marathi", "Punjabi"] %}
               <option value="{{ lang }}">{{ lang }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
 
-      <button class="w-full bg-emerald-500 hover:bg-emerald-600 transition rounded-xl py-3 font-semibold">🎶 Get Recommendations</button>
+      <!-- Submit Button -->
+      <button
+        class="w-full bg-emerald-500 hover:bg-emerald-600 transition-all duration-300 rounded-xl py-3 font-semibold text-lg
+               shadow-md shadow-emerald-500/30 hover:shadow-emerald-400/40 hover:scale-[1.02]">
+        🎶 Get Recommendations
+      </button>
     </form>
 
-    <p class="text-xs text-slate-400 mt-6">Tip: if face/text isn’t provided, your manual mood is used.</p>
+    <p class="text-xs text-slate-400 mt-6 text-center">
+      💡 Tip: If face or text input isn’t provided, your manual mood is used.
+    </p>
   </main>
 
-  <footer class="max-w-5xl mx-auto px-4 pb-10 text-xs text-slate-400">
-    ML Course Project • Mood + Language • Links open in new tabs
+  <!-- Footer -->
+  <footer class="max-w-5xl mx-auto px-4 pb-10 text-center text-xs text-slate-400 border-t border-white/10 mt-12 pt-4">
+    <p>MoodSync • ML-Based Music Recommender</p>
+    <p>Developed by <span class="text-emerald-400 font-semibold">Team Predix</span> • Built with ❤️ using Flask & TailwindCSS</p>
   </footer>
 </body>
 </html>
