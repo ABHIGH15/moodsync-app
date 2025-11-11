@@ -1,19 +1,28 @@
+# --- Core Framework ---
 flask==3.0.0
 gunicorn==22.0.0
+
+# --- Data Science Core ---
 pandas==2.2.2
 numpy==1.26.4
 joblib==1.4.2
 scikit-learn==1.5.1
+
+# --- Lightweight Utilities ---
 opencv-python-headless==4.10.0.84
 TextBlob==0.18.0
 pydub==0.25.1
+nltk==3.9.1
 
-nltk
-# flask-ngrok==0.0.25  # Only for Colab testing (skip on Render)
+# --- Render-safe Notes ---
+# ⚠️ TensorFlow & FER are disabled for Render:
+# fer==22.5.1
+# mtcnn==0.1.1
+# tensorflow
+# tensorflow-cpu
 
-# ⚠️ Commented out heavy TensorFlow/FER dependencies for Render:
-# fer==22.5.1          # Requires TensorFlow; too heavy for free-tier Render
-# mtcnn==0.1.1         # Face detection dependency (requires TensorFlow)
-# tensorflow           # Large dependency (over 500 MB)
-# tensorflow-cpu       # Alternate TensorFlow build (still too heavy)
-# yt-dlp==2023.10.7
+# ⚙️ YouTube/Spotify handling done with safe URL generation (no yt-dlp)
+# yt-dlp==2023.10.7  # commented to avoid heavy builds
+
+# --- Dev/Test only (local use) ---
+# flask-ngrok==0.0.25  # For Colab testing only, skip on Render
