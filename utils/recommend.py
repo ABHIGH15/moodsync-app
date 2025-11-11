@@ -1,8 +1,8 @@
 # utils/recommend.py
 import pandas as pd
-import numpy as np
+import random
 
-# --- Define emotional zones per mood ---
+# Define target emotional regions for each mood
 MOOD_CHARACTERISTICS = {
     "Happy":     {"valence": (0.6, 1.0), "energy": (0.6, 1.0)},
     "Sad":       {"valence": (0.0, 0.4), "energy": (0.0, 0.5)},
@@ -12,10 +12,10 @@ MOOD_CHARACTERISTICS = {
 
 def recommend_songs(df: pd.DataFrame, mood: str, language: str = None, n: int = 8) -> pd.DataFrame:
     """
-    Recommend songs using valence & energy proximity.
-    Includes smart fallback when the initial filter yields few or no results.
+    Recommend songs based on mood + language using valence & energy proximity.
+    Adds randomness for variety while keeping cluster coherence.
     """
-    if df is None or df.empty:
+    if df.empty:
         return pd.DataFrame()
 
     mood = (mood or "Calm").capitalize()
@@ -25,55 +25,26 @@ def recommend_songs(df: pd.DataFrame, mood: str, language: str = None, n: int = 
     v_lo, v_hi = MOOD_CHARACTERISTICS[mood]["valence"]
     e_lo, e_hi = MOOD_CHARACTERISTICS[mood]["energy"]
 
-    # --- Primary filter ---
-    filtered = df[
-        df["valence"].between(v_lo, v_hi, inclusive="both") &
-        df["energy"].between(e_lo, e_hi, inclusive="both")
-    ]
-
-    # --- Language filter ---
+    # 1️⃣ Language filtering (first)
     if language:
-        filtered_lang = filtered[filtered["language"].str.lower() == language.lower()]
-        # if language filter yields results, use it; else fallback to broader mood-based
-        if not filtered_lang.empty:
-            filtered = filtered_lang
+        base = df[df['language'].str.lower() == language.lower()]
+        if base.empty:
+            base = df.copy()
+    else:
+        base = df.copy()
 
-    # --- Fallback 1: widen valence/energy band if too few songs ---
-    if len(filtered) < n // 2:
-        v_lo, v_hi = max(0, v_lo - 0.1), min(1, v_hi + 0.1)
-        e_lo, e_hi = max(0, e_lo - 0.1), min(1, e_hi + 0.1)
-        filtered = df[
-            df["valence"].between(v_lo, v_hi, inclusive="both") &
-            df["energy"].between(e_lo, e_hi, inclusive="both")
-        ]
+    # 2️⃣ Select a random "offset" within mood bounds to simulate sub-clusters
+    offset_val = random.uniform(-0.05, 0.05)
+    offset_eng = random.uniform(-0.05, 0.05)
+    v_center = ((v_lo + v_hi) / 2) + offset_val
+    e_center = ((e_lo + e_hi) / 2) + offset_eng
 
-        if language:
-            fallback_lang = filtered[filtered["language"].str.lower() == language.lower()]
-            if not fallback_lang.empty:
-                filtered = fallback_lang
+    # 3️⃣ Score distance from this dynamic center
+    base = base.copy()
+    base["score"] = (base["valence"] - v_center) ** 2 + (base["energy"] - e_center) ** 2
 
-    # --- Fallback 2: full dataset if still empty ---
-    if filtered.empty:
-        filtered = df.copy()
+    # 4️⃣ Random sampling after sorting to keep freshness
+    top_candidates = base.sort_values("score").head(50)  # take 50 close ones
+    sampled = top_candidates.sample(n=min(n, len(top_candidates)), replace=False, random_state=None)
 
-    # --- Compute "distance" to the ideal emotional center ---
-    v_center = (v_lo + v_hi) / 2
-    e_center = (e_lo + e_hi) / 2
-    filtered = filtered.copy()
-    filtered["score"] = (filtered["valence"] - v_center) ** 2 + (filtered["energy"] - e_center) ** 2
-
-    # --- Sort and return top-N unique songs ---
-    top = (
-        filtered
-        .sort_values("score", ascending=True)
-        .drop_duplicates(subset=["name", "artist"])
-        .head(n)
-    )
-
-    return top[["name", "artist", "language", "mood", "valence", "energy"]]
-
-
-# --- Standalone test ---
-if __name__ == "__main__":
-    df = pd.read_csv("data/final_master_song_dataset.csv")
-    print(recommend_songs(df, mood="Happy", language="Hindi", n=5))
+    return sampled[['name', 'artist', 'language', 'mood', 'valence', 'energy']]
