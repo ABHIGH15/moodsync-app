@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: moodsync-app
+    env: python
+    plan: free
+
+    # 🧱 Build and Run
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+
+    # 🧠 Environment Variables
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.14     # locks to Python 3.10
+      - key: FLASK_ENV
+        value: production  # disables debug mode
+      - key: DEBUG
+        value: "false"     # safe for production
+      - key: PORT
+        value: 10000       # Render auto-injects PORT, but this is a fallback
+
+    # 🌀 Automatic redeploy when main branch changes
+    autoDeploy: true
+
+    # 🗃️ Keep logs for 30 days
+    logRetentionDays: 30
+
+    # 🕒 Health check (Render uses this to verify service startup)
+    healthCheckPath: /ping
