@@ -1,16 +1,12 @@
-# ---- Core web stack ----
-Flask==3.0.0
+flask==3.0.0
 gunicorn==22.0.0
-
-# ---- Data and ML ----
-pandas==2.0.3
-numpy==1.24.4
+pandas==2.1.1
+numpy==1.25.2
 joblib==1.3.2
-scikit-learn==1.3.2
-
-# ---- Utilities ----
-opencv-python-headless==4.8.0.76
+scikit-learn==1.3.0
+opencv-python-headless==4.8.1.78
 textblob==0.17.1
 pydub==0.25.1
 youtubesearchpython==1.6.6
 nltk==3.8.1
+
