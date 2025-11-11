@@ -1,33 +1,33 @@
 # utils/youtube_spotify.py
-import subprocess
-from urllib.parse import quote_plus
+import urllib.parse
 
-def build_spotify_search_url(name: str, artist: str) -> str:
-    query = quote_plus(f"{name} {artist}")
+def build_youtube_link(song_name: str, artist: str) -> str:
+    """
+    Creates a direct YouTube search link instead of downloading metadata.
+    """
+    query = urllib.parse.quote(f"{song_name} {artist}")
+    return f"https://www.youtube.com/results?search_query={query}"
+
+def build_spotify_link(song_name: str, artist: str) -> str:
+    """
+    Creates a Spotify search link.
+    """
+    query = urllib.parse.quote(f"{song_name} {artist}")
     return f"https://open.spotify.com/search/{query}"
 
-def build_youtube_link(name: str, artist: str) -> str:
-    """Get top YouTube search result URL using yt-dlp"""
-    query = f"{name} {artist}"
-    try:
-        # Run yt-dlp search quietly
-        result = subprocess.run(
-            ["yt-dlp", f"ytsearch1:{query}", "--get-id", "--no-warnings"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        video_id = result.stdout.strip()
-        if video_id:
-            return f"https://www.youtube.com/watch?v={video_id}"
-    except Exception as e:
-        print("⚠️ YouTube search error:", e)
-    return f"https://www.youtube.com/results?search_query={quote_plus(query)}"
+def attach_links(recommendations: list) -> list:
+    """
+    Adds YouTube & Spotify links to each song in the list.
+    """
+    if not recommendations or not isinstance(recommendations, list):
+        return []
 
-def attach_links(rows):
-    out = []
-    for r in rows:
-        yt = build_youtube_link(r['name'], r['artist'])
-        sp = build_spotify_search_url(r['name'], r['artist'])
-        out.append({**r, 'youtube': yt, 'spotify': sp})
-    return out
+    for r in recommendations:
+        try:
+            r["youtube"] = build_youtube_link(r["name"], r["artist"])
+            r["spotify"] = build_spotify_link(r["name"], r["artist"])
+        except Exception as e:
+            print(f"⚠️ Link generation error: {e}")
+            r["youtube"] = "#"
+            r["spotify"] = "#"
+    return recommendations
