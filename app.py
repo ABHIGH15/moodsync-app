@@ -8,12 +8,13 @@ from flask import Flask, render_template, request, jsonify
 from utils.preprocessing import load_dataset
 from utils.recommend import recommend_songs
 from utils.youtube_spotify import attach_links
-from utils.face_emotion import detect_face_mood
+from utils.face_emotion import detect_face_mood  # safe fallback version
 from utils.text_voice import analyze_text_mood
 from utils.mood_mapper import sanitize_mood
 
+# --- Logging ---
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # --- Flask Setup ---
 app = Flask(__name__)
@@ -31,7 +32,7 @@ try:
     model = joblib.load(MODEL_PATH)
     print("✅ Model and dataset loaded successfully.")
 except Exception as e:
-    print(f"⚠️ Error loading model or dataset: {e}")
+    logging.error(f"⚠️ Error loading model or dataset: {e}")
     df = pd.DataFrame()
     model = None
 
@@ -44,14 +45,14 @@ def index():
         text_input = request.form.get("user_text", "").strip()
         image = request.files.get("face_image")
 
-        # 1️⃣ Face Detection
+        # 1️⃣ Face Detection (skipped on Render → returns "Calm")
         if image and image.filename != "":
             image_path = os.path.join(app.config["UPLOAD_FOLDER"], image.filename)
             image.save(image_path)
             mood_input = detect_face_mood(image_path)
             os.remove(image_path)
 
-        # 2️⃣ Text Input
+        # 2️⃣ Text-based Mood Detection
         elif text_input:
             mood_input = analyze_text_mood(text_input)
 
@@ -60,14 +61,14 @@ def index():
             mood_input = "Calm"
 
         mood = sanitize_mood(mood_input)
-        print(f"🎭 Mood detected: {mood} | Language: {language or 'Any'}")
+        logging.info(f"🎭 Mood detected: {mood} | Language: {language or 'Any'}")
 
         try:
             recommendations = recommend_songs(df, mood, language)
             songs_dict = recommendations.to_dict(orient="records")
             songs_with_links = attach_links(songs_dict)
         except Exception as e:
-            print(f"⚠️ Recommendation error: {e}")
+            logging.error(f"⚠️ Recommendation error: {e}")
             songs_with_links = []
 
         return render_template("results.html",
@@ -96,4 +97,3 @@ def ping():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
