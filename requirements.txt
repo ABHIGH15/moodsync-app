@@ -1,12 +1,18 @@
 flask==3.0.0
 gunicorn==22.0.0
-pandas==2.1.1
-numpy==1.25.2
-joblib==1.3.2
-scikit-learn==1.3.0
-opencv-python-headless==4.8.1.78
-textblob==0.17.1
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+scikit-learn==1.5.1
+opencv-python-headless==4.10.0.84
+TextBlob==0.18.0
 pydub==0.25.1
 yt-dlp==2023.10.7
-nltk==3.8.1
+nltk
+# flask-ngrok==0.0.25  # Only for Colab testing (skip on Render)
 
+# ⚠️ Commented out heavy TensorFlow/FER dependencies for Render:
+# fer==22.5.1          # Requires TensorFlow; too heavy for free-tier Render
+# mtcnn==0.1.1         # Face detection dependency (requires TensorFlow)
+# tensorflow           # Large dependency (over 500 MB)
+# tensorflow-cpu       # Alternate TensorFlow build (still too heavy)
