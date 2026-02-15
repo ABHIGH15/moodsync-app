@@ -172,6 +172,7 @@ def log_click():
                 data.get("artist", ""),
                 data.get("platform", "")
             ])
+            print("LOGGED:", mood, language, song, artist)
         return {"status": "logged"}
     except Exception as e:
         logging.error(f"Logging error: {e}")
