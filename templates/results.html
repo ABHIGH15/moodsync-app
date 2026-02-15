@@ -16,7 +16,6 @@
     </div>
   </header>
 
-  <!-- Main -->
   <main class="max-w-5xl mx-auto px-4 py-8">
 
     <!-- Mood badge -->
@@ -67,6 +66,7 @@
       </div>
     </section>
     {% endif %}
+
   </main>
 
   <footer class="max-w-5xl mx-auto px-4 py-8 text-xs text-slate-400">
@@ -78,7 +78,7 @@
     function logClick(mood, language, song, artist, platform) {
       fetch("/log_click", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           mood: mood,
           language: language,
@@ -100,7 +100,7 @@
       try {
         const response = await fetch("/api/recommend", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             mood: "{{ mood }}",
             language: "{{ language }}" === "All" ? "" : "{{ language }}"
@@ -122,14 +122,12 @@
               🎚️ Energy: ${Number(s.energy).toFixed(2)}
               • 🎭 Valence: ${Number(s.valence).toFixed(2)}
             </div>
-
             <div class="mt-3 flex items-center gap-2">
               <a href="${s.youtube}" target="_blank"
                  onclick="logClick('{{ mood }}','{{ language }}','${s.name}','${s.artist}','youtube')"
                  class="px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm">
                  YouTube ▶
               </a>
-
               <a href="${s.spotify}" target="_blank"
                  onclick="logClick('{{ mood }}','{{ language }}','${s.name}','${s.artist}','spotify')"
                  class="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-sm">
@@ -141,8 +139,8 @@
         });
 
       } catch (err) {
-        alert("Could not refresh recommendations.");
         console.error(err);
+        alert("Could not refresh recommendations.");
       }
 
       btn.innerText = "↻ Refresh Recommendations";
