@@ -4,6 +4,17 @@ import pandas as pd
 import joblib
 from flask import Flask, render_template, request, jsonify
 
+import csv
+from datetime import datetime
+
+LOG_FILE = "logs/user_interactions.csv"
+
+os.makedirs("logs", exist_ok=True)
+
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["timestamp", "mood", "language", "song", "artist"])
 # --- Utility imports ---
 from utils.preprocessing import load_dataset
 from utils.recommend import recommend_songs
@@ -147,7 +158,29 @@ def ping():
         "dataset_rows": int(df.shape[0]) if isinstance(df, pd.DataFrame) else 0,
         "team": "Predix"
     }
+@app.route("/log_click", methods=["POST"])
+def log_click():
+    data = request.json or {}
 
+    mood = data.get("mood", "")
+    language = data.get("language", "")
+    song = data.get("song", "")
+    artist = data.get("artist", "")
+
+    try:
+        with open(LOG_FILE, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                datetime.utcnow().isoformat(),
+                mood,
+                language,
+                song,
+                artist
+            ])
+        return {"status": "logged"}
+    except Exception as e:
+        logging.error(f"Logging error: {e}")
+        return {"status": "error"}, 500
 
 # ---- Entry Point ----
 if __name__ == "__main__":
