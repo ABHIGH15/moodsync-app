@@ -1,9 +1,8 @@
-# app.py
 import os, random, logging, csv
 import pandas as pd
 import joblib
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 
 # --- Utility imports ---
 from utils.preprocessing import load_dataset
@@ -36,9 +35,9 @@ SUPPORTED_LANGUAGES = ["English", "Hindi", "Tamil", "Marathi", "Punjabi"]
 
 # ---- Mood → Theme Map ----
 MOOD_THEME = {
-    "Calm":      {"emoji": "🧘", "bg": "bg-emerald-500/20"},
-    "Happy":     {"emoji": "😊", "bg": "bg-yellow-500/20"},
-    "Sad":       {"emoji": "😔", "bg": "bg-blue-500/20"},
+    "Calm": {"emoji": "🧘", "bg": "bg-emerald-500/20"},
+    "Happy": {"emoji": "😊", "bg": "bg-yellow-500/20"},
+    "Sad": {"emoji": "😔", "bg": "bg-blue-500/20"},
     "Energetic": {"emoji": "⚡", "bg": "bg-pink-500/20"},
 }
 
@@ -69,7 +68,6 @@ def index():
 
         mood_input = None
 
-        # Face detection (stub)
         if image and image.filename:
             try:
                 image_path = os.path.join(app.config["UPLOAD_FOLDER"], image.filename)
@@ -79,14 +77,12 @@ def index():
             except Exception as e:
                 logging.warning(f"⚠️ Face detection failed: {e}")
 
-        # Text mood detection
         if not mood_input and text_input:
             try:
                 mood_input = analyze_text_mood(text_input)
             except Exception as e:
                 logging.warning(f"⚠️ Text mood analysis failed: {e}")
 
-        # Manual fallback
         if not mood_input:
             mood_input = (request.form.get("mood") or "Calm").strip()
 
@@ -100,7 +96,6 @@ def index():
 
         logging.info(f"🎭 Final Mood: {mood} | Language: {language or 'Any'}")
 
-        # Recommendations
         try:
             rec_df = recommend_songs(df, mood, language)
             songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
@@ -155,28 +150,44 @@ def api_recommend():
 
 
 # =========================================================
-# CLICK LOGGER
+# CLICK LOGGER (FIXED)
 # =========================================================
 @app.route("/log_click", methods=["POST"])
 def log_click():
-    data = request.json or {}
-
     try:
+        data = request.json or {}
+
+        mood = data.get("mood", "")
+        language = data.get("language", "")
+        song = data.get("song", "")
+        artist = data.get("artist", "")
+        platform = data.get("platform", "")
+
         with open(LOG_FILE, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 datetime.utcnow().isoformat(),
-                data.get("mood", ""),
-                data.get("language", ""),
-                data.get("song", ""),
-                data.get("artist", ""),
-                data.get("platform", "")
+                mood,
+                language,
+                song,
+                artist,
+                platform
             ])
-            print("LOGGED:", mood, language, song, artist)
+
+        logging.info(f"📝 Logged click: {song} ({platform})")
         return {"status": "logged"}
+
     except Exception as e:
         logging.error(f"Logging error: {e}")
         return {"status": "error"}, 500
+
+
+# =========================================================
+# DOWNLOAD LOGS
+# =========================================================
+@app.route("/download_logs")
+def download_logs():
+    return send_file(LOG_FILE, as_attachment=True)
 
 
 # =========================================================
@@ -190,11 +201,7 @@ def ping():
         "team": "Predix"
     }
 
-from flask import send_file
 
-@app.route("/download_logs")
-def download_logs():
-    return send_file(LOG_FILE, as_attachment=True)
 # =========================================================
 # ENTRY
 # =========================================================
