@@ -190,7 +190,11 @@ def ping():
         "team": "Predix"
     }
 
+from flask import send_file
 
+@app.route("/download_logs")
+def download_logs():
+    return send_file(LOG_FILE, as_attachment=True)
 # =========================================================
 # ENTRY
 # =========================================================
