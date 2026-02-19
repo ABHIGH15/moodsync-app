@@ -1,4 +1,4 @@
-import os, random, logging, csv
+import os, logging, csv
 import pandas as pd
 import joblib
 from datetime import datetime
@@ -12,15 +12,21 @@ from utils.face_emotion import detect_face_mood
 from utils.text_voice import analyze_text_mood
 from utils.mood_mapper import sanitize_mood
 
-# ---- Logging ----
+# =========================================================
+# Logging
+# =========================================================
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
-# ---- Flask Setup ----
+# =========================================================
+# Flask Setup
+# =========================================================
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# ---- Interaction log file ----
+# =========================================================
+# Interaction Log File
+# =========================================================
 LOG_FILE = "logs/user_interactions.csv"
 os.makedirs("logs", exist_ok=True)
 
@@ -29,11 +35,12 @@ if not os.path.exists(LOG_FILE):
         writer = csv.writer(f)
         writer.writerow(["timestamp", "mood", "language", "song", "artist", "platform"])
 
-# ---- Supported Lists ----
+# =========================================================
+# Supported Lists
+# =========================================================
 SUPPORTED_MOODS = ["Calm", "Happy", "Sad", "Energetic"]
 SUPPORTED_LANGUAGES = ["English", "Hindi", "Tamil", "Marathi", "Punjabi"]
 
-# ---- Mood → Theme Map ----
 MOOD_THEME = {
     "Calm": {"emoji": "🧘", "bg": "bg-emerald-500/20"},
     "Happy": {"emoji": "😊", "bg": "bg-yellow-500/20"},
@@ -41,11 +48,15 @@ MOOD_THEME = {
     "Energetic": {"emoji": "⚡", "bg": "bg-pink-500/20"},
 }
 
-# ---- Paths ----
+# =========================================================
+# Paths
+# =========================================================
 DATA_PATH = "data/final_master_song_dataset.csv"
 MODEL_PATH = "model/final_mood_classifier_v1.joblib"
 
-# ---- Load dataset + model ----
+# =========================================================
+# Load Dataset + Model
+# =========================================================
 logging.info("🔄 Loading dataset and model...")
 try:
     df = load_dataset(DATA_PATH)
@@ -54,6 +65,55 @@ try:
 except Exception as e:
     logging.error(f"⚠️ Could not load model or dataset: {e}")
     df, model = pd.DataFrame(), None
+
+
+# =========================================================
+# 🔥 POPULARITY RANKING FUNCTION
+# =========================================================
+def apply_popularity_ranking(songs):
+    """
+    Re-rank recommended songs based on click history.
+    """
+
+    if not songs:
+        return songs
+
+    if not os.path.exists(LOG_FILE):
+        return songs
+
+    try:
+        logs_df = pd.read_csv(LOG_FILE)
+
+        if logs_df.empty:
+            return songs
+
+        click_counts = (
+            logs_df.groupby(["song", "artist"])
+            .size()
+            .reset_index(name="click_count")
+        )
+
+        songs_df = pd.DataFrame(songs)
+
+        merged = songs_df.merge(
+            click_counts,
+            how="left",
+            left_on=["name", "artist"],
+            right_on=["song", "artist"]
+        )
+
+        merged["click_count"] = merged["click_count"].fillna(0)
+
+        merged = merged.sort_values(
+            by="click_count",
+            ascending=False
+        )
+
+        return merged.to_dict(orient="records")
+
+    except Exception as e:
+        logging.error(f"Popularity ranking failed: {e}")
+        return songs
 
 
 # =========================================================
@@ -68,6 +128,7 @@ def index():
 
         mood_input = None
 
+        # Face detection
         if image and image.filename:
             try:
                 image_path = os.path.join(app.config["UPLOAD_FOLDER"], image.filename)
@@ -77,12 +138,14 @@ def index():
             except Exception as e:
                 logging.warning(f"⚠️ Face detection failed: {e}")
 
+        # Text detection
         if not mood_input and text_input:
             try:
                 mood_input = analyze_text_mood(text_input)
             except Exception as e:
                 logging.warning(f"⚠️ Text mood analysis failed: {e}")
 
+        # Manual fallback
         if not mood_input:
             mood_input = (request.form.get("mood") or "Calm").strip()
 
@@ -100,7 +163,9 @@ def index():
             rec_df = recommend_songs(df, mood, language)
             songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
             songs = attach_links(songs)
-            random.shuffle(songs)
+
+            # 🔥 Apply click ranking
+            songs = apply_popularity_ranking(songs)
 
             top_mix = songs[:5]
             rest = songs[5:]
@@ -142,15 +207,20 @@ def api_recommend():
     try:
         rec_df = recommend_songs(df, mood, language)
         songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
-        random.shuffle(songs)
-        return jsonify(attach_links(songs))
+        songs = attach_links(songs)
+
+        # 🔥 Apply click ranking
+        songs = apply_popularity_ranking(songs)
+
+        return jsonify(songs)
+
     except Exception as e:
         logging.error(f"⚠️ API recommendation error: {e}")
         return jsonify({"error": "Recommendation generation failed"}), 500
 
 
 # =========================================================
-# CLICK LOGGER (FIXED)
+# CLICK LOGGER
 # =========================================================
 @app.route("/log_click", methods=["POST"])
 def log_click():
