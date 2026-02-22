@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>MoodSync — ML Music Recommender</title>
+  <title>MoodSync — Music Recommender</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -16,7 +16,6 @@
         <h1 class="text-xl font-semibold tracking-wide">MoodSync</h1>
       </div>
       <nav class="text-sm flex items-center gap-5">
-        <a href="/ping" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">/ping</a>
         <a href="https://open.spotify.com/" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">Spotify</a>
         <a href="https://www.youtube.com/" target="_blank" class="text-slate-300 hover:text-emerald-400 transition">YouTube</a>
       </nav>
@@ -30,7 +29,7 @@
         Find music by Mood & Language
       </h2>
       <p class="text-slate-300 text-sm max-w-lg mx-auto">
-        Upload a face image (optional), describe your feeling, or pick a mood manually to get ML-based song recommendations.
+        Upload a face image (currently disabled), describe your feeling, or pick a mood manually to get song recommendations.
       </p>
     </div>
 
@@ -39,7 +38,7 @@
 
       <!-- Face Image Upload -->
       <div>
-        <label class="block mb-2 font-medium">📸 Upload a face image (optional)</label>
+        <label class="block mb-2 font-medium">📸 Upload a face image (currently disabled)</label>
         <input type="file" name="face_image" accept="image/*"
                class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
                       file:text-sm file:font-semibold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
@@ -56,7 +55,7 @@
       <!-- Mood & Language -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-2 font-medium">🎭 Mood (fallback)</label>
+          <label class="block mb-2 font-medium">🎭 Mood </label>
           <select name="mood"
                   class="w-full bg-slate-800 rounded-lg p-3 border border-slate-700 focus:border-emerald-400 outline-none transition">
             {% for m in ["Calm", "Happy", "Sad", "Energetic"] %}
@@ -92,8 +91,8 @@
 
   <!-- Footer -->
   <footer class="max-w-5xl mx-auto px-4 pb-10 text-center text-xs text-slate-400 border-t border-white/10 mt-12 pt-4">
-    <p>MoodSync • ML-Based Music Recommender</p>
-    <p>Developed by <span class="text-emerald-400 font-semibold">Team Predix</span> • Built with ❤️ using Flask & TailwindCSS</p>
+    <p>MoodSync • ML and BigData Based Music Recommender</p>
+    <p>Developed by <span class="text-emerald-400 font-semibold">Team Predix</span> • Built with ❤️ to make you hear good songs </p>
   </footer>
 </body>
 </html>
