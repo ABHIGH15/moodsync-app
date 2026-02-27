@@ -1,0 +1,30 @@
+{
+    "total_clicks": 3,
+    "top_songs": [
+        {
+            "song": "PERFECT (From \"Sunny Sanskari Ki Tulsi Kumari\")",
+            "artist": "Guru Randhawa",
+            "click_count": 1
+        },
+        {
+            "song": "Pyar Song 177",
+            "artist": "Diljit Dosanjh",
+            "click_count": 1
+        },
+        {
+            "song": "Dil Song 93",
+            "artist": "Sidhu Moose Wala",
+            "click_count": 1
+        }
+    ],
+    "mood_distribution": {
+        "Calm": 1,
+        "Energetic": 2
+    },
+    "language_distribution": {
+        "Punjabi": 3
+    },
+    "platform_distribution": {
+        "youtube": 3
+    }
+}
