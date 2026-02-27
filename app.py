@@ -314,7 +314,9 @@ def dashboard():
         # Load Spark insights if exists
         spark_file = "data/spark_insights.json"
         if os.path.exists(spark_file):
-            spark_insights = pd.read_json(spark_file).to_dict()
+            import json
+            with open(spark_file, "r") as f:
+                spark_insights = json.load(f)
         else:
             spark_insights = {}
 
