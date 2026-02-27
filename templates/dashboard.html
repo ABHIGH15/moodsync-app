@@ -50,14 +50,22 @@
   </div>
 
   <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Spark Insights</h2>
-    {% if spark_insights %}
-        <pre>{{ spark_insights }}</pre>
-    {% else %}
-        <p>No Spark insights uploaded yet.</p>
-    {% endif %}
-  </div>
+  <h2 class="text-xl font-semibold mb-3">Spark Advanced Insights</h2>
 
+  {% if spark_insights %}
+
+    <p><strong>Total Clicks (Spark):</strong> {{ spark_insights.total_clicks }}</p>
+
+    <h3 class="mt-3 font-semibold">Top Songs (Spark)</h3>
+    {% for s in spark_insights.top_songs %}
+      <p>{{ s.song }} - {{ s.artist }} ({{ s.click_count }})</p>
+    {% endfor %}
+
+  {% else %}
+    <p>No Spark insights uploaded yet.</p>
+
+  {% endif %}
+</div>
 </div>
 
 </body>
