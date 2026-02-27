@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MoodSync Analytics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen p-8">
+
+<h1 class="text-3xl font-bold mb-6">📊 MoodSync Public Analytics Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Total Interactions</h2>
+    <p class="text-4xl">{{ total_clicks }}</p>
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Top 5 Songs</h2>
+    <ul>
+      {% for s in top_songs %}
+      <li class="mb-2">
+        {{ s.song }} - {{ s.artist }} ({{ s.count }})
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Mood Distribution</h2>
+    {% for mood, count in mood_dist.items() %}
+      <p>{{ mood }} : {{ count }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Language Distribution</h2>
+    {% for lang, count in language_dist.items() %}
+      <p>{{ lang }} : {{ count }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Platform Usage</h2>
+    {% for platform, count in platform_dist.items() %}
+      <p>{{ platform }} : {{ count }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl">
+    <h2 class="text-xl font-semibold mb-3">Spark Insights</h2>
+    {% if spark_insights %}
+        <pre>{{ spark_insights }}</pre>
+    {% else %}
+        <p>No Spark insights uploaded yet.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+</body>
+</html>
