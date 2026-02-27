@@ -68,52 +68,86 @@ except Exception as e:
 
 
 # =========================================================
-# 🔥 POPULARITY RANKING FUNCTION
+# 🔥 CONTEXTUAL ADAPTIVE HYBRID RANKING
 # =========================================================
-def apply_popularity_ranking(songs):
-    """
-    Re-rank recommended songs based on click history.
-    """
+def apply_contextual_hybrid_ranking(songs, current_mood, current_language):
 
     if not songs:
         return songs
 
+    songs_df = pd.DataFrame(songs)
+
+    # Ensure confidence exists
+    if "confidence" not in songs_df.columns:
+        songs_df["confidence"] = 0.5  # fallback neutral score
+
+    songs_df["confidence"] = songs_df["confidence"].fillna(0.5)
+
+    # If no logs, return sorted by confidence only
     if not os.path.exists(LOG_FILE):
-        return songs
+        return songs_df.sort_values(by="confidence", ascending=False).to_dict(orient="records")
 
     try:
         logs_df = pd.read_csv(LOG_FILE)
 
         if logs_df.empty:
-            return songs
+            return songs_df.sort_values(by="confidence", ascending=False).to_dict(orient="records")
 
-        click_counts = (
-            logs_df.groupby(["song", "artist"])
-            .size()
-            .reset_index(name="click_count")
+        # Global click count
+        global_counts = logs_df.groupby(["song", "artist"]).size().reset_index(name="global_click")
+
+        # Mood specific click count
+        mood_counts = logs_df[logs_df["mood"] == current_mood] \
+            .groupby(["song", "artist"]).size().reset_index(name="mood_click")
+
+        # Language specific click count
+        language_counts = logs_df[logs_df["language"] == current_language] \
+            .groupby(["song", "artist"]).size().reset_index(name="language_click")
+
+        # Merge all
+        merged = songs_df.merge(global_counts, how="left",
+                                left_on=["name", "artist"],
+                                right_on=["song", "artist"])
+
+        merged = merged.merge(mood_counts, how="left",
+                              left_on=["name", "artist"],
+                              right_on=["song", "artist"],
+                              suffixes=("", "_mood"))
+
+        merged = merged.merge(language_counts, how="left",
+                              left_on=["name", "artist"],
+                              right_on=["song", "artist"],
+                              suffixes=("", "_lang"))
+
+        merged["global_click"] = merged["global_click"].fillna(0)
+        merged["mood_click"] = merged["mood_click"].fillna(0)
+        merged["language_click"] = merged["language_click"].fillna(0)
+
+        # Normalize click scores
+        if merged["mood_click"].max() > 0:
+            merged["mood_score"] = merged["mood_click"] / merged["mood_click"].max()
+        else:
+            merged["mood_score"] = 0
+
+        if merged["language_click"].max() > 0:
+            merged["language_score"] = merged["language_click"] / merged["language_click"].max()
+        else:
+            merged["language_score"] = 0
+
+        # Hybrid score formula
+        merged["hybrid_score"] = (
+            0.6 * merged["confidence"] +
+            0.25 * merged["mood_score"] +
+            0.15 * merged["language_score"]
         )
 
-        songs_df = pd.DataFrame(songs)
-
-        merged = songs_df.merge(
-            click_counts,
-            how="left",
-            left_on=["name", "artist"],
-            right_on=["song", "artist"]
-        )
-
-        merged["click_count"] = merged["click_count"].fillna(0)
-
-        merged = merged.sort_values(
-            by="click_count",
-            ascending=False
-        )
+        merged = merged.sort_values(by="hybrid_score", ascending=False)
 
         return merged.to_dict(orient="records")
 
     except Exception as e:
-        logging.error(f"Popularity ranking failed: {e}")
-        return songs
+        logging.error(f"Hybrid ranking failed: {e}")
+        return songs_df.sort_values(by="confidence", ascending=False).to_dict(orient="records")
 
 
 # =========================================================
@@ -122,13 +156,13 @@ def apply_popularity_ranking(songs):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
+
         language = (request.form.get("language") or "").strip()
         text_input = (request.form.get("feeling_text") or "").strip()
         image = request.files.get("face")
 
         mood_input = None
 
-        # Face detection
         if image and image.filename:
             try:
                 image_path = os.path.join(app.config["UPLOAD_FOLDER"], image.filename)
@@ -138,14 +172,12 @@ def index():
             except Exception as e:
                 logging.warning(f"⚠️ Face detection failed: {e}")
 
-        # Text detection
         if not mood_input and text_input:
             try:
                 mood_input = analyze_text_mood(text_input)
             except Exception as e:
                 logging.warning(f"⚠️ Text mood analysis failed: {e}")
 
-        # Manual fallback
         if not mood_input:
             mood_input = (request.form.get("mood") or "Calm").strip()
 
@@ -164,8 +196,8 @@ def index():
             songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
             songs = attach_links(songs)
 
-            # 🔥 Apply click ranking
-            songs = apply_popularity_ranking(songs)
+            # 🔥 Apply Hybrid Ranking
+            songs = apply_contextual_hybrid_ranking(songs, mood, language)
 
             top_mix = songs[:5]
             rest = songs[5:]
@@ -196,30 +228,6 @@ def index():
 
 
 # =========================================================
-# API RECOMMEND
-# =========================================================
-@app.route("/api/recommend", methods=["POST"])
-def api_recommend():
-    data = request.json or {}
-    mood = sanitize_mood(data.get("mood", "Calm"))
-    language = data.get("language", "")
-
-    try:
-        rec_df = recommend_songs(df, mood, language)
-        songs = rec_df.to_dict(orient="records") if not rec_df.empty else []
-        songs = attach_links(songs)
-
-        # 🔥 Apply click ranking
-        songs = apply_popularity_ranking(songs)
-
-        return jsonify(songs)
-
-    except Exception as e:
-        logging.error(f"⚠️ API recommendation error: {e}")
-        return jsonify({"error": "Recommendation generation failed"}), 500
-
-
-# =========================================================
 # CLICK LOGGER
 # =========================================================
 @app.route("/log_click", methods=["POST"])
@@ -227,24 +235,18 @@ def log_click():
     try:
         data = request.json or {}
 
-        mood = data.get("mood", "")
-        language = data.get("language", "")
-        song = data.get("song", "")
-        artist = data.get("artist", "")
-        platform = data.get("platform", "")
-
         with open(LOG_FILE, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 datetime.utcnow().isoformat(),
-                mood,
-                language,
-                song,
-                artist,
-                platform
+                data.get("mood", ""),
+                data.get("language", ""),
+                data.get("song", ""),
+                data.get("artist", ""),
+                data.get("platform", "")
             ])
 
-        logging.info(f"📝 Logged click: {song} ({platform})")
+        logging.info(f"📝 Logged click: {data.get('song')}")
         return {"status": "logged"}
 
     except Exception as e:
