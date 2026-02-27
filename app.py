@@ -262,6 +262,73 @@ def download_logs():
     return send_file(LOG_FILE, as_attachment=True)
 
 
+
+# =========================================================
+# PUBLIC DASHBOARD
+# =========================================================
+@app.route("/dashboard")
+def dashboard():
+
+    try:
+        if not os.path.exists(LOG_FILE):
+            return render_template("dashboard.html",
+                                   total_clicks=0,
+                                   top_songs=[],
+                                   mood_dist={},
+                                   language_dist={},
+                                   platform_dist={},
+                                   spark_insights={})
+
+        logs_df = pd.read_csv(LOG_FILE)
+
+        if logs_df.empty:
+            return render_template("dashboard.html",
+                                   total_clicks=0,
+                                   top_songs=[],
+                                   mood_dist={},
+                                   language_dist={},
+                                   platform_dist={},
+                                   spark_insights={})
+
+        total_clicks = len(logs_df)
+
+        # Top Songs (Global)
+        top_songs = (
+            logs_df.groupby(["song", "artist"])
+            .size()
+            .reset_index(name="count")
+            .sort_values(by="count", ascending=False)
+            .head(5)
+            .to_dict(orient="records")
+        )
+
+        # Mood distribution
+        mood_dist = logs_df["mood"].value_counts().to_dict()
+
+        # Language distribution
+        language_dist = logs_df["language"].value_counts().to_dict()
+
+        # Platform distribution
+        platform_dist = logs_df["platform"].value_counts().to_dict()
+
+        # Load Spark insights if exists
+        spark_file = "data/spark_insights.json"
+        if os.path.exists(spark_file):
+            spark_insights = pd.read_json(spark_file).to_dict()
+        else:
+            spark_insights = {}
+
+        return render_template("dashboard.html",
+                               total_clicks=total_clicks,
+                               top_songs=top_songs,
+                               mood_dist=mood_dist,
+                               language_dist=language_dist,
+                               platform_dist=platform_dist,
+                               spark_insights=spark_insights)
+
+    except Exception as e:
+        logging.error(f"Dashboard error: {e}")
+        return "Dashboard Error", 500
 # =========================================================
 # HEALTH CHECK
 # =========================================================
