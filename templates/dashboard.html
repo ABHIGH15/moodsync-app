@@ -4,69 +4,138 @@
   <meta charset="utf-8">
   <title>MoodSync Analytics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="bg-slate-950 text-white min-h-screen p-8">
 
-<h1 class="text-3xl font-bold mb-6">📊 MoodSync Public Analytics Dashboard</h1>
+<h1 class="text-3xl font-bold mb-8">📊 MoodSync Public Analytics Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+
+  <div class="bg-white/10 p-6 rounded-xl text-center">
+    <p class="text-sm text-slate-300">Total Interactions</p>
+    <p class="text-4xl font-bold mt-2">{{ total_clicks }}</p>
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl text-center">
+    <p class="text-sm text-slate-300">Unique Moods</p>
+    <p class="text-4xl font-bold mt-2">{{ mood_dist|length }}</p>
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl text-center">
+    <p class="text-sm text-slate-300">Languages Active</p>
+    <p class="text-4xl font-bold mt-2">{{ language_dist|length }}</p>
+  </div>
+
+  <div class="bg-white/10 p-6 rounded-xl text-center">
+    <p class="text-sm text-slate-300">Platforms Used</p>
+    <p class="text-4xl font-bold mt-2">{{ platform_dist|length }}</p>
+  </div>
+
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
 
   <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Total Interactions</h2>
-    <p class="text-4xl">{{ total_clicks }}</p>
+    <h2 class="text-lg font-semibold mb-4">Mood Distribution</h2>
+    <canvas id="moodChart"></canvas>
   </div>
 
   <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Top 5 Songs</h2>
-    <ul>
-      {% for s in top_songs %}
-      <li class="mb-2">
-        {{ s.song }} - {{ s.artist }} ({{ s.count }})
-      </li>
-      {% endfor %}
-    </ul>
+    <h2 class="text-lg font-semibold mb-4">Language Distribution</h2>
+    <canvas id="languageChart"></canvas>
   </div>
 
   <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Mood Distribution</h2>
-    {% for mood, count in mood_dist.items() %}
-      <p>{{ mood }} : {{ count }}</p>
-    {% endfor %}
+    <h2 class="text-lg font-semibold mb-4">Platform Usage</h2>
+    <canvas id="platformChart"></canvas>
   </div>
 
   <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Language Distribution</h2>
-    {% for lang, count in language_dist.items() %}
-      <p>{{ lang }} : {{ count }}</p>
-    {% endfor %}
+    <h2 class="text-lg font-semibold mb-4">Top 5 Songs</h2>
+    <table class="w-full text-sm">
+      <thead class="text-slate-300 border-b border-white/20">
+        <tr>
+          <th class="text-left py-2">Song</th>
+          <th class="text-left py-2">Artist</th>
+          <th class="text-right py-2">Clicks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in top_songs %}
+        <tr class="border-b border-white/10">
+          <td class="py-2">{{ s.song }}</td>
+          <td class="py-2">{{ s.artist }}</td>
+          <td class="py-2 text-right">{{ s.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
-  <div class="bg-white/10 p-6 rounded-xl">
-    <h2 class="text-xl font-semibold mb-3">Platform Usage</h2>
-    {% for platform, count in platform_dist.items() %}
-      <p>{{ platform }} : {{ count }}</p>
-    {% endfor %}
-  </div>
+</div>
 
-  <div class="bg-white/10 p-6 rounded-xl">
-  <h2 class="text-xl font-semibold mb-3">Spark Advanced Insights</h2>
+<!-- Spark Insights Section -->
+<div class="bg-white/10 p-6 rounded-xl">
+  <h2 class="text-xl font-semibold mb-4">⚡ Spark Advanced Insights</h2>
 
   {% if spark_insights %}
 
-    <p><strong>Total Clicks (Spark):</strong> {{ spark_insights.total_clicks }}</p>
+    <p class="mb-4">
+      <strong>Total Clicks (Spark Processed):</strong>
+      {{ spark_insights.total_clicks }}
+    </p>
 
-    <h3 class="mt-3 font-semibold">Top Songs (Spark)</h3>
+    <h3 class="font-semibold mt-4 mb-2">Top Songs (Spark)</h3>
     {% for s in spark_insights.top_songs %}
       <p>{{ s.song }} - {{ s.artist }} ({{ s.click_count }})</p>
     {% endfor %}
 
   {% else %}
     <p>No Spark insights uploaded yet.</p>
-
   {% endif %}
 </div>
-</div>
+
+<script>
+  const moodData = {{ mood_dist | tojson }};
+  const languageData = {{ language_dist | tojson }};
+  const platformData = {{ platform_dist | tojson }};
+
+  new Chart(document.getElementById('moodChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(moodData),
+      datasets: [{
+        label: 'Clicks',
+        data: Object.values(moodData)
+      }]
+    }
+  });
+
+  new Chart(document.getElementById('languageChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(languageData),
+      datasets: [{
+        label: 'Clicks',
+        data: Object.values(languageData)
+      }]
+    }
+  });
+
+  new Chart(document.getElementById('platformChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(platformData),
+      datasets: [{
+        data: Object.values(platformData)
+      }]
+    }
+  });
+</script>
 
 </body>
 </html>
